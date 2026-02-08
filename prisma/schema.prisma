@@ -1,0 +1,160 @@
+// Prisma schema for AI Game Maker Studio
+// Uses SQLite for local dev, easily swappable to PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - simple email-based auth
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  projects     Project[]
+  magicLinks   MagicLink[]
+  sessions     Session[]
+  jobActions   Job[]
+}
+
+// Magic link for passwordless auth
+model MagicLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// Session model for auth
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// Game project
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  spec        String   @default("") // JSON string for project specification
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  files       ProjectFile[]
+  assets      Asset[]
+  versions    ProjectVersion[]
+  chatHistory ChatMessage[]
+  jobs        Job[]
+}
+
+// Project file
+model ProjectFile {
+  id        String   @id @default(cuid())
+  path      String   // Relative path within project
+  content   String   // File content
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, path])
+}
+
+// Project version (for history)
+model ProjectVersion {
+  id        String   @id @default(cuid())
+  version   Int
+  snapshot  String   // JSON snapshot of all files
+  message   String?  // What changed
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, version])
+}
+
+// Chat message history
+model ChatMessage {
+  id        String   @id @default(cuid())
+  role      String   // "user" or "assistant"
+  content   String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// 3D Asset from Meshy
+model Asset {
+  id          String   @id @default(cuid())
+  name        String
+  prompt      String
+  meshyJobId  String?  @unique
+  status      String   @default("pending") // pending, processing, completed, failed
+  glbUrl      String?
+  thumbnailUrl String?
+  metadata    String?  // JSON for additional metadata
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Template for starter projects
+model Template {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  type        String   // "2d-platformer", "top-down-shooter", "3d-exploration"
+  files       String   // JSON array of file definitions
+  thumbnail   String?
+  createdAt   DateTime @default(now())
+
+  projects    Project[]
+}
+
+// Background job queue
+model Job {
+  id        String   @id @default(cuid())
+  type      String   // "codex", "meshy", "export"
+  status    String   @default("pending") // pending, running, completed, failed
+  input     String   // JSON input data
+  output    String?  // JSON output data
+  error     String?
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Rate limit tracking
+model RateLimit {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // "codex", "meshy"
+  count     Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@unique([userId, action])
+}
