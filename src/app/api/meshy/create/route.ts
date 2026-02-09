@@ -83,14 +83,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Real Meshy API call
-    const response = await fetch("https://api.meshy.ai/v1/text-to-3d", {
+    // Real Meshy API call (v2 endpoint)
+    const response = await fetch("https://api.meshy.ai/openapi/v2/text-to-3d", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${MESHY_API_KEY}`,
       },
       body: JSON.stringify({
+        mode: "preview",
         prompt,
         art_style: style || "realistic",
         negative_prompt: "low quality, blurry, distorted",

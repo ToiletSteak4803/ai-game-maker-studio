@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Real Meshy API call
-    const response = await fetch(`https://api.meshy.ai/v1/text-to-3d/${jobId}`, {
+    // Real Meshy API call (v2 endpoint)
+    const response = await fetch(`https://api.meshy.ai/openapi/v2/text-to-3d/${jobId}`, {
       headers: {
         Authorization: `Bearer ${MESHY_API_KEY}`,
       },
