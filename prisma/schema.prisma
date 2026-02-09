@@ -1,13 +1,14 @@
 // Prisma schema for AI Game Maker Studio
-// Uses SQLite for local dev, easily swappable to PostgreSQL
+// Uses PostgreSQL via Supabase
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // User model - simple email-based auth
