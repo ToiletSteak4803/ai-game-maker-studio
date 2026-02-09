@@ -58,7 +58,7 @@ export default function StudioDashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("scratch");
 
   useEffect(() => {
     fetchProjects();
@@ -101,7 +101,7 @@ export default function StudioDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newProjectName,
-          templateId: selectedTemplate || undefined,
+          templateId: selectedTemplate === "scratch" ? undefined : selectedTemplate,
         }),
       });
 
@@ -178,7 +178,7 @@ export default function StudioDashboard() {
                         <SelectValue placeholder="Start from scratch" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Start from scratch</SelectItem>
+                        <SelectItem value="scratch">Start from scratch</SelectItem>
                         {templates.map((template) => (
                           <SelectItem key={template.id} value={template.id}>
                             {template.name}

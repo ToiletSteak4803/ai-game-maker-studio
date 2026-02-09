@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyPassword, validateEmail } from "@/lib/auth/password";
+import { hashPassword, validatePassword, validateEmail } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/tokens";
 
 export async function POST(request: NextRequest) {
@@ -31,27 +31,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
+    // Validate password strength
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return NextResponse.json(
+        { error: passwordError },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
-    if (!user) {
-      // Use same error message to prevent user enumeration
+    if (existingUser) {
       return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
+        { error: "An account with this email already exists" },
+        { status: 409 }
       );
     }
 
-    // Verify password
-    const isValid = await verifyPassword(password, user.passwordHash);
-    if (!isValid) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
+    // Hash password and create user
+    const passwordHash = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        passwordHash,
+      },
+    });
 
     // Create session
     const sessionToken = await createSession(user.id);
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("[auth/login] Error:", error);
+    console.error("[auth/signup] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

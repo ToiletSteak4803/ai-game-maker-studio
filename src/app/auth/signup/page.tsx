@@ -1,31 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Gamepad2, Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const errorParam = searchParams.get("error");
-  const redirectTo = searchParams.get("redirect") || "/studio";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -38,9 +41,9 @@ export default function LoginPage() {
         return;
       }
 
-      router.push(redirectTo);
+      router.push("/studio");
     } catch {
-      setError("Failed to sign in. Please try again.");
+      setError("Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -58,17 +61,15 @@ export default function LoginPage() {
 
         <div className="rounded-xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <h1 className="text-center text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            Sign in to your account
+            Create your account
           </h1>
           <p className="mt-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
-            Enter your email and password to continue
+            Start creating games with AI today
           </p>
 
-          {(error || errorParam) && (
+          {error && (
             <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-              {error ||
-                (errorParam === "unauthorized" && "Please sign in to continue") ||
-                (errorParam === "server_error" && "Server error, please try again")}
+              {error}
             </div>
           )}
 
@@ -93,12 +94,28 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="At least 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="mt-2"
-                autoComplete="current-password"
+                autoComplete="new-password"
+                minLength={8}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">Confirm password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="mt-2"
+                autoComplete="new-password"
+                minLength={8}
               />
             </div>
 
@@ -106,22 +123,22 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  Creating account...
                 </>
               ) : (
-                "Sign in"
+                "Create account"
               )}
             </Button>
           </form>
         </div>
 
         <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Don&apos;t have an account?{" "}
+          Already have an account?{" "}
           <Link
-            href="/auth/signup"
+            href="/auth/login"
             className="font-medium text-indigo-600 hover:text-indigo-500"
           >
-            Sign up
+            Sign in
           </Link>
         </p>
       </div>
