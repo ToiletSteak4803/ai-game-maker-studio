@@ -16,8 +16,11 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const { project, addMessage, setPendingPatch } = useProjectStore();
+  const project = useProjectStore((state) => state.project);
   const messages = project?.chatHistory || [];
+
+  const addMessage = useProjectStore((state) => state.addMessage);
+  const setPendingPatch = useProjectStore((state) => state.setPendingPatch);
 
   // Auto-scroll to bottom
   useEffect(() => {

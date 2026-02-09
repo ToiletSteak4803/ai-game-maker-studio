@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { AlertCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Project } from "@/lib/store/project-store";
@@ -15,12 +15,12 @@ export function PreviewPanel({ project }: PreviewPanelProps) {
   const [isRunning, setIsRunning] = useState(false);
 
   // Determine if this is a 2D (Phaser) or 3D (Three.js) project
-  const is3D = project.files.some(
+  const is3D = useMemo(() => project.files.some(
     (f) =>
       f.content.includes("THREE") ||
       f.content.includes("three") ||
       f.path.includes("3d-exploration")
-  );
+  ), [project.files]);
 
   useEffect(() => {
     if (!containerRef.current || !isRunning) return;
@@ -278,7 +278,7 @@ export function PreviewPanel({ project }: PreviewPanelProps) {
       console.error("Preview error:", err);
       setError("Failed to render preview. Check your code for errors.");
     }
-  }, [project, isRunning, is3D]);
+  }, [project.files, isRunning, is3D]);
 
   if (!isRunning) {
     return (

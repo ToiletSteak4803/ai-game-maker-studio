@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useProjectStore, selectFileTree } from "@/lib/store/project-store";
+import { useProjectStore } from "@/lib/store/project-store";
+import { useShallow } from "zustand/react/shallow";
+import { buildFileTree } from "@/lib/utils";
 import { ChatPanel } from "@/components/studio/chat-panel";
 import { FileTree } from "@/components/studio/file-tree";
 import { CodeEditor } from "@/components/studio/code-editor";
@@ -36,17 +38,21 @@ export default function ProjectEditor() {
   const router = useRouter();
   const projectId = params.projectId as string;
 
-  const {
-    project,
-    setProject,
-    selectedFile,
-    isSaving,
-    setIsSaving,
-    pendingPatch,
-    setPendingPatch,
-  } = useProjectStore();
+  const { project, selectedFile, isSaving, pendingPatch } = useProjectStore(
+    useShallow((state) => ({
+      project: state.project,
+      selectedFile: state.selectedFile,
+      isSaving: state.isSaving,
+      pendingPatch: state.pendingPatch,
+    }))
+  );
+  const setIsSaving = useProjectStore((state) => state.setIsSaving);
+  const setPendingPatch = useProjectStore((state) => state.setPendingPatch);
 
-  const fileTree = useProjectStore(selectFileTree);
+  const fileTree = useMemo(() => {
+    if (!project?.files) return [];
+    return buildFileTree(project.files.map(f => f.path));
+  }, [project?.files]);
   const [isLoading, setIsLoading] = useState(true);
   const [previewKey, setPreviewKey] = useState(0);
 
@@ -60,7 +66,7 @@ export default function ProjectEditor() {
           return;
         }
         const data = await res.json();
-        setProject({
+        useProjectStore.getState().setProject({
           id: data.project.id,
           name: data.project.name,
           description: data.project.description,
@@ -82,7 +88,7 @@ export default function ProjectEditor() {
     }
 
     fetchProject();
-  }, [projectId, router, setProject]);
+  }, [projectId, router]);
 
   // Save project
   const saveProject = useCallback(async () => {
